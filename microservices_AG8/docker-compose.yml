@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.5
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  microservice1:
+    build: ./microservice1
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.users.rule=Host(`localhost`) && PathPrefix(`/users`)"
+      - "traefik.http.routers.users.middlewares=strip-users"
+      - "traefik.http.middlewares.strip-users.stripPrefix.prefixes=/users"
+      - "traefik.http.services.users.loadbalancer.server.port=5000"
+
+  microservice2:
+    build: ./microservice2
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jwt.rule=Host(`localhost`) && PathPrefix(`/jwt`)"
+      - "traefik.http.routers.jwt.middlewares=strip-jwt"
+      - "traefik.http.middlewares.strip-jwt.stripPrefix.prefixes=/jwt"
+      - "traefik.http.services.jwt.loadbalancer.server.port=5000"
+
+  microservice3:
+    build: ./microservice3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.db.rule=Host(`localhost`) && PathPrefix(`/db`)"
+      - "traefik.http.routers.db.middlewares=strip-db"
+      - "traefik.http.middlewares.strip-db.stripPrefix.prefixes=/db"
+      - "traefik.http.services.db.loadbalancer.server.port=5000"
